@@ -3,10 +3,14 @@ require_relative 'Village'
 #Mafia monte carlo sim
 $TRIALS = 10000
 $START_DAY = true
-$TOWN_SETUP = {:Townie =>11}
+$TOWN_SETUP = {:Townie => 9, :Doctor => 1}
 $MAFIA_SETUP = {:Goon => 2}
 $VILLAGE_SETUP = {:Town => $TOWN_SETUP, :Mafia => $MAFIA_SETUP}
 $DEBUG = false
+$SUPER_DEBUG = false
+if $DEBUG
+	$TRIALS = 1
+end
 
 town_wins = 0
 mafia_wins = 0
@@ -37,15 +41,19 @@ mafia_wins = 0
 			day = true
 		end
 
+		if $SUPER_DEBUG
+			village.print_details
+		end
+
 		village.factions.each do |f|
-			if f.faction == :Town && village.wins?(f)
+			if f.faction == :Town && f.win?
 				game_over = true
 				town_wins += 1
 				if $DEBUG
 					puts "Town wins"
 				end
 			end
-			if f.faction == :Mafia && village.wins?(f)
+			if f.faction == :Mafia && f.win?
 				game_over = true
 				mafia_wins += 1
 				if $DEBUG

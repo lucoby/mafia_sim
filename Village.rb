@@ -7,9 +7,9 @@ class Village
 		faction_hash.each do |faction, role_hash|
 			case faction
 			when :Town
-				@factions.concat([Town.new(faction, role_hash)])
+				@factions.concat([Town.new(self, faction, role_hash)])
 			when :Mafia
-				@factions.concat([Mafia.new(faction, role_hash)])
+				@factions.concat([Mafia.new(self, faction, role_hash)])
 			end
 		end
 		@dead = Array.new()
@@ -21,28 +21,6 @@ class Village
 			alive += f.count_alive_faction
 		end
 		alive
-	end
-
-	def wins?(faction)
-		case faction.type
-		when :Town
-			@factions.each do |f|
-				if f.type != :Town && f.count_alive_faction != 0
-					return false
-				end
-			end
-			return true
-		when :Mafia
-			@factions.each do |f|
-				if !(f.type != :Town || f.faction != faction.faction) && f.count_alive_faction != 0
-					return false
-				end
-			end
-			if faction.count_alive_faction >= count_alive_village.to_f / 2
-				return true
-			end
-		end
-		return false
 	end
 
 	def lynch
@@ -68,20 +46,7 @@ class Village
 		#Set mafia kill
 		@factions.each do |f|
 			if f.type == :Mafia
-				actor = Random.rand(f.count_alive_faction)
-				if $DEBUG
-					puts "mafia kill actor: #{actor}"
-				end
-				f.players.each do |p|
-					if p.alive
-						if actor == 0
-							p.has_action = true
-							break
-						else
-							actor -= 1
-						end
-					end
-				end
+				f.set_killer
 			end
 		end
 
@@ -94,7 +59,7 @@ class Village
 					if $DEBUG
 						puts "Gathered action type: #{action.type}, actor: #{action.actor.faction_type}, target: #{action.target.faction_type}"
 					end
-					@actions.merge({action.type  => action}) {|key, old_val, new_val| [old_val, new_val]}
+					@actions.merge!({action.type  => [action]}) {|key, old_val, new_val| [old_val, new_val]}
 					if action.type == :Kill && p.faction_type == :Mafia
 						p.has_action = false
 					end
@@ -103,10 +68,45 @@ class Village
 		end
 
 		#Evaluate actions
+		if @actions.has_key?(:Protect)
+			@actions[:Protect].each do |a|
+				if (a.actor.alive && !a.actor.blocked)
+					a.executed = true
+					a.target.protected = true
+				end
+			end
+		end
 		if @actions.has_key?(:Kill)
 			@actions[:Kill].each do |a|
-				if (a.actor.alive && !a.actor.blocked)
+				if $DEBUG
+					puts "Trying to kill #{a.target} actor alive?: #{a.actor.alive} blocked? #{a.actor.blocked} target protected? #{a.target.protected}"
+				end
+				if (a.actor.alive && !a.actor.blocked && !a.target.protected)
 					a.target.alive = false
+					if $DEBUG
+						puts "Killed: #{a.target}"
+					end
+				end
+			end
+		end
+
+		#Clean-up non permanent actions
+		if @actions.has_key?(:Protect)
+			@actions[:Protect].each do |a|
+				if a.executed
+					a.target.protected = false
+				end
+			end
+		end
+	end
+
+	def print_details
+		n = 0
+		factions.each do |f|
+			f.players.each do |p|
+				if p.alive
+					puts "Player#{n}- Role: #{p.class} Alive: #{p.alive} Blocked: #{p.blocked} Has action?: #{p.has_action} Protected: #{p.protected}"
+					n += 1
 				end
 			end
 		end
@@ -115,3 +115,8 @@ class Village
 	attr_accessor :factions
 	attr_accessor :dead
 end
+
+TOWN_SETUP = {:Townie => 10, :Doctor => 1}
+MAFIA_SETUP = {:Goon => 2}
+VILLAGE_SETUP = {:Town => TOWN_SETUP, :Mafia => MAFIA_SETUP}
+village = Village.new(VILLAGE_SETUP)

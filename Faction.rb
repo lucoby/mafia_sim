@@ -1,7 +1,8 @@
 require_relative 'Player'
 
 class Faction
-	def initialize(faction, role_hash)
+	def initialize(village, faction, role_hash)
+		@village = village
 		@faction = faction
 		case @faction
 		when :Mafia
@@ -20,9 +21,14 @@ class Faction
 	def make_player(role)
 		case role
 		when :Townie
-			@players.concat([Townie.new(self)])
+			p = Townie.new(self)
+			@players.concat([p])
 		when :Goon
-			@players.concat([Goon.new(self)])
+			p = Goon.new(self)
+			@players.concat([p])
+		when :Doctor
+			p = Doctor.new(self)
+			@players.concat([p])
 		else
 			puts "Invalid role: #{role}"
 		end
@@ -39,22 +45,60 @@ class Faction
 		alive
 	end
 
+	def win?
+	end
+
 	attr_accessor :faction
 	attr_accessor :players
 	attr_accessor :type
 end
 
 class Town < Faction
-	def initialize(faction, role_hash)
+	def initialize(village, faction, role_hash)
 		super
 		@type = :Town
+	end
+
+	def win?
+		@village.factions.each do |f|
+			if f.type != :Town && f.count_alive_faction != 0
+				return false
+			end
+		end
+		return true
 	end
 end
 
 class Mafia < Faction
-	def initialize(faction, role_hash)
+	def initialize(village, faction, role_hash)
 		super
 		@type = :Mafia
 	end
 
+	def win?
+		@village.factions.each do |f|
+			if !(f.type != :Town || f.faction != @faction) && f.count_alive_faction != 0
+				return false
+			end
+		end
+		if count_alive_faction >= @village.count_alive_village.to_f / 2
+			return true
+		end
+	end
+
+	def set_killer
+		set_action = false
+		@players.each_with_index do |p,i|
+			if p.alive && !set_action
+				if $DEBUG
+					puts "Mafia #{i} is the killer"
+				end
+				p.has_action = true
+				set_action = true
+			else
+				p.has_action = false
+			end
+		end
+	end
 end
+

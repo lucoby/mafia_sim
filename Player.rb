@@ -4,7 +4,6 @@ class Player
 	def initialize(faction)
 		@faction = faction
 		@alive = true
-		@has_action = false
 		@blocked = false
 		@protected = false
 	end
@@ -26,6 +25,31 @@ class Townie < Player
 		super
 		@faction_type = :Town
 		@investigate = :Town
+		@has_action = false
+	end
+end
+
+class Doctor < Player
+	def initialize(faction)
+		super
+		@faction_type = :Town
+		@investigate = :Town
+		@has_action = true
+	end
+
+	def action (village)
+		target = Random.rand(village.count_alive_village)
+		village.factions.each do |f|
+			f.players.each do |p|
+				if p.alive
+					if target == 0
+						return Action.new(:Protect, self, p)
+					else
+						target -= 1
+					end
+				end
+			end
+		end
 	end
 end
 
@@ -34,6 +58,7 @@ class Goon < Player
 		super
 		@faction_type = :Mafia
 		@investigate = :Mafia
+		@has_action = false
 	end
 
 	def action (village)
@@ -43,7 +68,6 @@ class Goon < Player
 				f.players.each do |p|
 					if p.alive
 						if target == 0
-							p.alive = false
 							return Action.new(:Kill, self, p)
 						else
 							target -= 1
@@ -60,9 +84,11 @@ class Action
 		@type = type
 		@actor = actor
 		@target = target
+		@executed = false
 	end
 
 	attr_accessor :type
 	attr_accessor :actor
 	attr_accessor :target
+	attr_accessor :executed
 end
