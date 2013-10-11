@@ -38,12 +38,36 @@ class Doctor < Player
 	end
 
 	def action (village)
-		target = Random.rand(village.count_alive_village)
+		target = Random.rand(village.count_alive_village) - 1
 		village.factions.each do |f|
 			f.players.each do |p|
 				if p.alive
-					if target == 0
+					if target <= 0 && p != self
 						return Action.new(:Protect, self, p)
+					else
+						target -= 1
+					end
+				end
+			end
+		end
+	end
+end
+
+class Cop < Player
+	def initialize(faction)
+		super
+		@faction_type = :Town
+		@investigate = :Town
+		@has_action = true
+	end
+
+	def action (village)
+		target = Random.rand(village.count_alive_village) - 1
+		village.factions.each do |f|
+			f.players.each do |p|
+				if p.alive
+					if target <= 0 && p != self
+						return Action.new(:Investigate, self, p)
 					else
 						target -= 1
 					end

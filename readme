@@ -1,0 +1,76 @@
+~~Mafia Simulator~~
+
+
+--Basic--
+-How to use-
+At the top of Mafia_Sim.rb there are 2 global variables $TOWN_SETUP and $MAFIA_SETUP. Adjust the numbers to modify the number of times that role appears in village.
+
+Example
+$TOWN_SETUP = {:Townie => 9, :Doctor => 1, :Cop => 1}
+$MAFIA_SETUP = {:Goon => 2}
+
+Will result in a village of 13 people: 9 vanilla townies, 1 Doctor, 1 Cop, and a Mafia with 2 Goons.
+
+-Supported roles-
+Townie
+Has no action
+
+Doctor
+Each night chooses one random person to protect.
+
+Cop
+Each night chooses one random person to investigate. If they are town, nothing happens, if they are mafia they are lynched the next day.
+(Theory note: the following are not simulated 1) Mafia killing the cop the next night 2) Doctor protecting the cop 3) The cop revealing who is definitely town some of these make the swing the statistics in favor of mafia and some in the favor of town. For simplicity sake it is assumed that they roughly cancel out)
+
+Goon
+Each night the mafia selects one amongst them to kill.
+
+--Advanced--
+-Adding a role-
+In Player.rb create a new class that extends Player
+i.e.
+
+class New_Role < Player
+	def initialize(faction)
+		super
+		@faction_type = ...
+		@investigate = ...
+		@has_action = ...
+	end
+
+	def action (village)
+		...
+	end
+end
+
+@faction_type, @investigate, @has_action are not initialized by default and they should be.
+
+@faction_type is what faction the person actually belongs to. @investigate is what a cop will investigate them as. i.e. a regular townie should have both @faction_type and @investigate set to :Town. A godfather should have @faction_type set to :Mafia (because he is in the Mafia) however @investigate should be set to :Town (because if the cop investigates him he should appear as a town)
+
+@has_action should be set to true if the role will have an action.
+
+action method should return an instance of the action class i.e. calling return Action.new(type, actor, target). type refers to the type of action. Currently supported types of actions are :Protect, :Kill, and :Investigate. Actor is who is performing the action. Most of the time this should be self. Target is who the action is directed to. This is easier a random alive person within the Village (or subset of the Village)
+
+In Faction.rb > Faction class > make_player method add a case for the new player type.
+
+Finally adjust $TOWN_SETUP and $MAFIA_SETUP as necessary. It is also recommended that you use debug mode ($DEBUG set to true) to confirm that the new role is being added correctly and behaving as expected
+
+-Adding an action-
+In Village.rb > Village class > night_actions method under the #Evaluate Actions comment, add the following:
+
+		if @actions.has_key?(:New_Action)
+			@actions[:New_Action].each do |a|
+				if $DEBUG
+					puts "Trying to new_action #{a.target} actor alive?: #{a.actor.alive} blocked? #{a.actor.blocked}"
+				end
+				if (a.actor.alive && !a.actor.blocked)
+					a.executed = true
+					#insert actual action-y stuff here
+					if $DEBUG
+						puts "New_actione'd: #{a.target}"
+					end
+				end
+			end
+		end
+
+The actual action-y stuff typically involves setting a flag or changing a value (i.e. killing is done by setting alive to false, protecting is done by setting protect to true). It is important to be aware of precendense of actions when adding one. Current evaluation order is Protect > Kill > Investigation. Role-blocking will be added as the highest priority when it is added.

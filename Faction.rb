@@ -23,11 +23,14 @@ class Faction
 		when :Townie
 			p = Townie.new(self)
 			@players.concat([p])
-		when :Goon
-			p = Goon.new(self)
-			@players.concat([p])
 		when :Doctor
 			p = Doctor.new(self)
+			@players.concat([p])
+		when :Cop
+			p = Cop.new(self)
+			@players.concat([p])
+		when :Goon
+			p = Goon.new(self)
 			@players.concat([p])
 		else
 			puts "Invalid role: #{role}"
@@ -41,7 +44,6 @@ class Faction
 				alive += 1
 			end
 		end
-		#puts "counting faction: #{@faction} count = #{alive}"
 		alive
 	end
 

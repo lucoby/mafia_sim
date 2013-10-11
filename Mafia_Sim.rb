@@ -3,7 +3,8 @@ require_relative 'Village'
 #Mafia monte carlo sim
 $TRIALS = 10000
 $START_DAY = true
-$TOWN_SETUP = {:Townie => 9, :Doctor => 1}
+$TOWN_SETUP = {:Townie => 9, :Doctor => 1, :Cop => 1}
+#$TOWN_SETUP = {:Townie => 13}
 $MAFIA_SETUP = {:Goon => 2}
 $VILLAGE_SETUP = {:Town => $TOWN_SETUP, :Mafia => $MAFIA_SETUP}
 $DEBUG = false

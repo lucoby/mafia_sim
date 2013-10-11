@@ -12,6 +12,7 @@ class Village
 				@factions.concat([Mafia.new(self, faction, role_hash)])
 			end
 		end
+		@scum_positive = Array.new()
 		@dead = Array.new()
 	end
 
@@ -24,6 +25,19 @@ class Village
 	end
 
 	def lynch
+		@scum_positive.each do |p|
+			if p.alive
+				p.alive = false
+				if $DEBUG
+					puts "Lynched: #{p} because of investigation"
+				end
+				@scum_positive.delete(p)
+				return
+			else
+				@scum_positive.delete(p)
+			end
+		end
+
 		target = Random.rand(count_alive_village)
 		@factions.each do |f|
 			f.players.each do |p|
@@ -31,7 +45,7 @@ class Village
 					if target == 0
 						p.alive = false
 						if $DEBUG
-							puts "Lynched: #{p.faction_type}"
+							puts "Lynched: #{p}"
 						end
 						return
 					else
@@ -40,6 +54,7 @@ class Village
 				end
 			end
 		end
+
 	end
 
 	def night_actions
@@ -70,9 +85,15 @@ class Village
 		#Evaluate actions
 		if @actions.has_key?(:Protect)
 			@actions[:Protect].each do |a|
+				if $DEBUG
+					puts "Trying to protect #{a.target} actor alive?: #{a.actor.alive} blocked? #{a.actor.blocked}"
+				end
 				if (a.actor.alive && !a.actor.blocked)
 					a.executed = true
 					a.target.protected = true
+					if $DEBUG
+						puts "Protected: #{a.target}"
+					end
 				end
 			end
 		end
@@ -85,6 +106,21 @@ class Village
 					a.target.alive = false
 					if $DEBUG
 						puts "Killed: #{a.target}"
+					end
+				end
+			end
+		end
+		if @actions.has_key?(:Investigate)
+			@actions[:Investigate].each do |a|
+				if $DEBUG
+					puts "Trying to investigate #{a.target} actor alive?: #{a.actor.alive} blocked? #{a.actor.blocked}"
+				end
+				if (a.actor.alive && !a.actor.blocked)
+					if $DEBUG
+						puts "Investigated: #{a.target} came up: #{a.target.investigate}"
+					end
+					if a.target.investigate != :Town
+						@scum_positive.concat([a.target])
 					end
 				end
 			end
