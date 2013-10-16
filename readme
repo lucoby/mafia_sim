@@ -49,7 +49,7 @@ end
 
 @has_action should be set to true if the role will have an action.
 
-action method should return an instance of the action class i.e. calling return Action.new(type, actor, target). type refers to the type of action. Currently supported types of actions are :Protect, :Kill, and :Investigate. Actor is who is performing the action. Most of the time this should be self. Target is who the action is directed to. This is easier a random alive person within the Village (or subset of the Village)
+action method should return an array actions (can contain only one) i.e. calling return [Action.new(type, actor, target) ...]. Type refers to the type of action. Currently supported types of actions are :Block, :Protect, :Kill, and :Investigate. Actor is who is performing the action. Most of the time this should be self. Target is who the action is directed to. This is easier a random alive person within the Village (or subset of the Village)
 
 In Faction.rb > Faction class > make_player method add a case for the new player type.
 

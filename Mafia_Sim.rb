@@ -3,11 +3,14 @@ require_relative 'Village'
 #Mafia monte carlo sim
 $TRIALS = 10000
 $START_DAY = true
-$TOWN_SETUP = {:Townie => 9, :Doctor => 1, :Cop => 1}
+$TOWN_SETUP = {:Townie => 7, :Doctor => 1, :Cop => 1}
 #$TOWN_SETUP = {:Townie => 13}
-$MAFIA_SETUP = {:Goon => 2}
+$MAFIA_SETUP = {:Goon => 2, :RoleBlocker => 1}
+#$MAFIA_SETUP = {:Goon => 2}
 $VILLAGE_SETUP = {:Town => $TOWN_SETUP, :Mafia => $MAFIA_SETUP}
-$DEBUG = false
+$NIGHTLESS = false
+
+$DEBUG = true
 $SUPER_DEBUG = false
 if $DEBUG
 	$TRIALS = 1
@@ -33,7 +36,9 @@ mafia_wins = 0
 				puts "SOD Town = #{village.factions[0].count_alive_faction} Mafia = #{village.factions[1].count_alive_faction}"
 			end
 			village.lynch
-			day = false
+			if !$NIGHTLESS
+				day = false
+			end
 		when false
 			if $DEBUG
 				puts "SON Town = #{village.factions[0].count_alive_faction} Mafia = #{village.factions[1].count_alive_faction}"

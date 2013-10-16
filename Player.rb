@@ -4,13 +4,18 @@ class Player
 	def initialize(faction)
 		@faction = faction
 		@alive = true
-		@blocked = false
-		@protected = false
+		@blocked = 0
+		@protected = 0
+		@has_kill = false
 	end
 
 	def action (village)
 	end
 
+	def undo_action(village)
+	end
+
+	attr_accessor :has_kill
 	attr_accessor :faction
 	attr_accessor :alive
 	attr_accessor :investigate
@@ -39,15 +44,11 @@ class Doctor < Player
 
 	def action (village)
 		target = Random.rand(village.count_alive_village) - 1
-		village.factions.each do |f|
-			f.players.each do |p|
-				if p.alive
-					if target <= 0 && p != self
-						return Action.new(:Protect, self, p)
-					else
-						target -= 1
-					end
-				end
+		village.each_player do |p|
+			if p.alive && target <= 0 && p != self
+				return [Action.new(:Protect, self, p)]
+			elsif p.alive
+				target -= 1
 			end
 		end
 	end
@@ -59,18 +60,24 @@ class Cop < Player
 		@faction_type = :Town
 		@investigate = :Town
 		@has_action = true
+		@investigated_players = Array.new()
 	end
 
 	def action (village)
-		target = Random.rand(village.count_alive_village) - 1
-		village.factions.each do |f|
-			f.players.each do |p|
-				if p.alive
-					if target <= 0 && p != self
-						return Action.new(:Investigate, self, p)
-					else
-						target -= 1
+		target = Random.rand(village.count_alive_village) - 1 - @investigated_players.length
+		village.each_player do |p|
+			if p.alive
+				investigated = false
+				@investigated_players.each do |i|
+					if i == p
+						investigated = true
 					end
+				end
+				if target <= 0 && p != self && !investigated
+					@investigated_players.concat([p])
+					return [Action.new(:Investigate, self, p)]
+				else
+					target -= 1
 				end
 			end
 		end
@@ -87,19 +94,54 @@ class Goon < Player
 
 	def action (village)
 		target = Random.rand(village.count_alive_village - faction.count_alive_faction)
-		village.factions.each do |f|
-			if f.faction != @faction.faction
-				f.players.each do |p|
-					if p.alive
-						if target == 0
-							return Action.new(:Kill, self, p)
-						else
-							target -= 1
-						end
-					end
+		village.each_player do |p|
+			if p.alive && target == 0 && @faction != p.faction
+				return [Action.new(:Kill, self, p)]
+			elsif p.alive
+				target -= 1
+			end
+		end
+	end
+end
+
+class RoleBlocker < Player
+	def initialize(faction)
+		super
+		@faction_type = :Mafia
+		@investigate = :Mafia
+		@has_action = true
+	end
+
+	def action (village)
+		block_action = nil
+		kill_action = nil
+		if @has_kill
+			target = Random.rand(village.count_alive_village - faction.count_alive_faction)
+			village.each_player do |p|
+				if p.alive && target <= 0 && @faction != p.faction && kill_action == nil
+					kill_action = Action.new(:Kill, self, p)
+				elsif p.alive && @faction != p.faction
+					target -= 1
 				end
 			end
 		end
+		target = Random.rand(village.count_alive_village - faction.count_alive_faction)
+		if @has_kill
+			target = Random.rand(village.count_alive_village - faction.count_alive_faction - 1)
+		end
+		village.each_player do |p|
+			if p.alive && target <= 0 && @faction != p.faction && block_action == nil
+				block_action = Action.new(:Block, self, p)
+				target -= 1
+			else
+				target -= 1
+			end
+		end
+		puts "Roleblocker has kill? #{@has_kill}"
+		if @has_kill
+			return [block_action,kill_action]
+		end
+		return [block_action]
 	end
 end
 

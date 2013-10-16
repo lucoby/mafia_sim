@@ -32,6 +32,9 @@ class Faction
 		when :Goon
 			p = Goon.new(self)
 			@players.concat([p])
+		when :RoleBlocker
+			p = RoleBlocker.new(self)
+			@players.concat([p])
 		else
 			puts "Invalid role: #{role}"
 		end
@@ -89,16 +92,13 @@ class Mafia < Faction
 	end
 
 	def set_killer
-		set_action = false
 		@players.each_with_index do |p,i|
-			if p.alive && !set_action
+			if p.alive
 				if $DEBUG
 					puts "Mafia #{i} is the killer"
 				end
-				p.has_action = true
-				set_action = true
-			else
-				p.has_action = false
+				p.has_kill = true
+				return
 			end
 		end
 	end
